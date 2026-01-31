@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>GitHub 艺术创作器 Pro</title>
+    <style>
+      :root {
+        --c0: #161b22;
+        --c1: #0e4429;
+        --c2: #006d32;
+        --c3: #26a641;
+        --c4: #39d353;
+
+        --bg: #0b0f14;
+        --panel: #0d1117;
+        --border: #30363d;
+        --text: #c9d1d9;
+        --muted: #8b949e;
+        --blue: #2f81f7;
+        --red: #f85149;
+        --green: #2ea043;
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          -apple-system,
+          system-ui,
+          Segoe UI,
+          Roboto,
+          Helvetica,
+          Arial,
+          "Apple Color Emoji",
+          "Segoe UI Emoji";
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 26px 14px 40px;
+      }
+
+      h1 {
+        margin: 0 0 14px;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+
+      .app {
+        width: min(980px, 100%);
+      }
+
+      /* ---------- GitHub-like panel ---------- */
+      .gh-wrap {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px 16px 12px;
+      }
+
+      .gh-top {
+        display: grid;
+        grid-template-columns: 40px 1fr;
+        gap: 8px;
+        align-items: end;
+        margin-bottom: 6px;
+      }
+      .gh-months {
+        position: relative;
+        height: 16px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .gh-months span {
+        position: absolute;
+        transform: translateX(-2px);
+        white-space: nowrap;
+        user-select: none;
+      }
+
+      .gh-main {
+        display: grid;
+        grid-template-columns: 40px 1fr;
+        gap: 8px;
+      }
+
+      .gh-days {
+        position: relative;
+        font-size: 12px;
+        color: var(--muted);
+        user-select: none;
+      }
+      .gh-days span {
+        position: absolute;
+        left: 0;
+        transform: translateY(-6px);
+      }
+
+      .gh-grid {
+        display: grid;
+        grid-auto-flow: column; /* 按周排列 */
+        grid-auto-columns: max-content;
+        grid-template-rows: repeat(7, 11px);
+        gap: 3px; /* ✅ 让格子更分开：2->3（想更松就改 4） */
+      }
+
+      .gh-cell {
+        width: 11px;
+        height: 11px;
+        border-radius: 2px;
+        background: var(--c0);
+        cursor: pointer;
+        outline: 1px solid rgba(255, 255, 255, 0.04);
+      }
+      .gh-cell:hover {
+        outline: 1px solid rgba(255, 255, 255, 0.35);
+      }
+
+      .gh-cell[data-level="1"] {
+        background: var(--c1);
+      }
+      .gh-cell[data-level="2"] {
+        background: var(--c2);
+      }
+      .gh-cell[data-level="3"] {
+        background: var(--c3);
+      }
+      .gh-cell[data-level="4"] {
+        background: var(--c4);
+      }
+      .gh-cell.out-year {
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .gh-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-top: 10px;
+      }
+
+      .learn {
+        color: var(--muted);
+        font-size: 12px;
+        user-select: none;
+      }
+
+      .gh-legend {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--muted);
+        user-select: none;
+      }
+      .gh-legend .box {
+        width: 11px;
+        height: 11px;
+        border-radius: 2px;
+        outline: 1px solid rgba(255, 255, 255, 0.04);
+      }
+
+      /* ---------- Controls / Palette ---------- */
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 14px;
+        align-items: center;
+        justify-content: space-between;
+        margin: 14px 0 12px;
+      }
+
+      .palette {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .palette span {
+        color: var(--muted);
+        font-size: 13px;
+        margin-right: 4px;
+      }
+      .p-item {
+        width: 18px;
+        height: 18px;
+        border-radius: 3px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        outline: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .p-item.active {
+        border-color: var(--blue);
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      select,
+      button {
+        height: 34px;
+        padding: 0 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #0b1220;
+        color: var(--text);
+        cursor: pointer;
+        font-size: 13px;
+      }
+
+      button.primary {
+        background: var(--green);
+        border: none;
+        font-weight: 700;
+        color: #fff;
+      }
+      button.primary:hover {
+        filter: brightness(1.05);
+      }
+
+      button.danger {
+        background: #21262d;
+        border: 1px solid var(--border);
+        color: var(--red);
+      }
+      button.danger:hover {
+        border-color: var(--red);
+      }
+
+      button.secondary {
+        background: #21262d;
+        border: 1px solid var(--border);
+      }
+      button.secondary:hover {
+        border-color: #6e7681;
+      }
+
+      .tip {
+        position: fixed;
+        z-index: 9999;
+        padding: 6px 8px;
+        background: #161b22;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-size: 12px;
+        pointer-events: none;
+        display: none;
+        white-space: nowrap;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      }
+
+      .small {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 10px;
+        line-height: 1.4;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app">
+      <h1>GitHub Spray Pro 🎨（拖拽涂色版）</h1>
+
+      <div class="bar">
+        <div class="palette" id="palette">
+          <span>当前深浅:</span>
+          <div
+            class="p-item active"
+            style="background: var(--c1)"
+            data-l="1"
+          ></div>
+          <div class="p-item" style="background: var(--c2)" data-l="2"></div>
+          <div class="p-item" style="background: var(--c3)" data-l="3"></div>
+          <div class="p-item" style="background: var(--c4)" data-l="4"></div>
+          <div
+            class="p-item"
+            style="background: var(--c0)"
+            title="擦除"
+            data-l="0"
+          ></div>
+        </div>
+
+        <div class="controls">
+          <label style="color: var(--muted); font-size: 13px">年份</label>
+          <select id="yearSelect"></select>
+
+          <button class="primary" id="btnSh">下载 .sh 脚本</button>
+          <button class="secondary" id="btnExportJson">导出 JSON</button>
+          <button class="secondary" id="btnImportJson">导入 JSON</button>
+          <input id="fileJson" type="file" accept="application/json" />
+          <button class="danger" id="btnClear">清空画布</button>
+        </div>
+      </div>
+
+      <div class="gh-wrap" id="panel">
+        <div class="gh-top">
+          <div></div>
+          <div class="gh-months" id="ghMonths"></div>
+        </div>
+
+        <div class="gh-main">
+          <div class="gh-days" id="ghDays"></div>
+          <div class="gh-grid" id="ghGrid"></div>
+        </div>
+
+        <div class="gh-footer">
+          <div class="learn">Tip: 按住左键拖拽涂色；右键拖拽擦除</div>
+
+          <div class="gh-legend">
+            <span>Less</span>
+            <div class="box" style="background: var(--c0)"></div>
+            <div class="box" style="background: var(--c1)"></div>
+            <div class="box" style="background: var(--c2)"></div>
+            <div class="box" style="background: var(--c3)"></div>
+            <div class="box" style="background: var(--c4)"></div>
+            <span>More</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="small">
+        ✅
+        说明：格子按真实日期对齐（Sun→Sat，按周排列）。拖拽涂色不会再一个个点。导出脚本固定本地中午
+        12:00:00 避免时区偏一天。
+      </div>
+
+      <div class="tip" id="tip"></div>
+    </div>
+
+    <script>
+      // --------------------- Elements ---------------------
+      const panel = document.getElementById("panel");
+      const ghGrid = document.getElementById("ghGrid");
+      const ghMonths = document.getElementById("ghMonths");
+      const ghDays = document.getElementById("ghDays");
+      const tip = document.getElementById("tip");
+
+      const yearSelect = document.getElementById("yearSelect");
+      const btnSh = document.getElementById("btnSh");
+      const btnExportJson = document.getElementById("btnExportJson");
+      const btnImportJson = document.getElementById("btnImportJson");
+      const fileJson = document.getElementById("fileJson");
+      const btnClear = document.getElementById("btnClear");
+
+      // --------------------- State ---------------------
+      // dateStr(YYYY-MM-DD) -> level(0..4)
+      const pixels = new Map();
+      let currentLevel = 1;
+
+      // ✅ 拖拽绘制状态
+      let isPainting = false;
+      let paintLevel = 1; // 当前一次拖拽使用的 level（左键=当前颜色，右键=0擦除）
+      let lastPaintedDate = null; // 防止同一格重复写
+
+      // --------------------- Helpers ---------------------
+      function pad(n) {
+        return String(n).padStart(2, "0");
+      }
+      function ymd(d) {
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      }
+      function atNoon(d) {
+        const x = new Date(d);
+        x.setHours(12, 0, 0, 0);
+        return x;
+      }
+      function startOfYearGrid(year) {
+        const jan1 = atNoon(new Date(year, 0, 1));
+        const start = new Date(jan1);
+        start.setDate(start.getDate() - start.getDay()); // 回退到周日
+        return start;
+      }
+      function endOfYearGrid(year) {
+        const dec31 = atNoon(new Date(year, 11, 31));
+        const end = new Date(dec31);
+        end.setDate(end.getDate() + (6 - end.getDay())); // 前进到周六
+        return end;
+      }
+      function formatLocalDateTimeFromYMD(ymdStr) {
+        return `${ymdStr} 12:00:00`;
+      }
+      function downloadText(filename, content, mime = "text/plain") {
+        const blob = new Blob([content], { type: mime });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+
+      function setCellLevel(cell, dateStr, level) {
+        // 0 表示擦除（删除）
+        if (level === 0) pixels.delete(dateStr);
+        else pixels.set(dateStr, level);
+        cell.setAttribute("data-level", String(level));
+      }
+
+      function paintCellFromEventTarget(target) {
+        const cell = target?.closest?.(".gh-cell");
+        if (!cell) return;
+        const dateStr = cell.dataset.date;
+        if (!dateStr) return;
+
+        // 防止拖拽时在同一格反复写
+        if (dateStr === lastPaintedDate) return;
+        lastPaintedDate = dateStr;
+
+        setCellLevel(cell, dateStr, paintLevel);
+      }
+
+      // --------------------- Palette ---------------------
+      document.getElementById("palette").onclick = (e) => {
+        const l = e.target?.dataset?.l;
+        if (l == null) return;
+        document
+          .querySelectorAll(".p-item")
+          .forEach((p) => p.classList.remove("active"));
+        e.target.classList.add("active");
+        currentLevel = parseInt(l, 10);
+      };
+
+      // --------------------- Render Grid ---------------------
+      function renderGitHubYear(year) {
+        ghGrid.innerHTML = "";
+        ghMonths.innerHTML = "";
+        ghDays.innerHTML = "";
+
+        const start = startOfYearGrid(year);
+        const end = endOfYearGrid(year);
+        const totalDays = Math.round((end - start) / 86400000) + 1;
+        const weeks = Math.ceil(totalDays / 7);
+
+        // 左侧标签：Mon/Wed/Fri
+        const dayLabels = [
+          { text: "Mon", row: 1 },
+          { text: "Wed", row: 3 },
+          { text: "Fri", row: 5 },
+        ];
+        dayLabels.forEach(({ text, row }) => {
+          const s = document.createElement("span");
+          s.textContent = text;
+          // ✅ gap 改成 3 后，行步进 = 11 + 3 = 14
+          s.style.top = `${row * 14}px`;
+          ghDays.appendChild(s);
+        });
+
+        // 月标：该月1号所在周列
+        const monthNames = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        for (let m = 0; m < 12; m++) {
+          const first = atNoon(new Date(year, m, 1));
+          const ws = new Date(first);
+          ws.setDate(ws.getDate() - ws.getDay());
+          const col = Math.round((ws - start) / 86400000 / 7);
+          if (col >= 0 && col < weeks) {
+            const tag = document.createElement("span");
+            tag.textContent = monthNames[m];
+            // ✅ gap 改成 3 后，列步进 = 11 + 3 = 14
+            tag.style.left = `${col * 14}px`;
+            ghMonths.appendChild(tag);
+          }
+        }
+
+        // cells
+        for (let w = 0; w < weeks; w++) {
+          for (let r = 0; r < 7; r++) {
+            const d = new Date(start);
+            d.setDate(start.getDate() + w * 7 + r);
+            const dateStr = ymd(d);
+
+            const cell = document.createElement("div");
+            cell.className = "gh-cell";
+            cell.dataset.date = dateStr;
+
+            const inYear = d.getFullYear() === year;
+            if (!inYear) {
+              cell.classList.add("out-year");
+            }
+
+            const level = pixels.get(dateStr) ?? 0;
+            cell.setAttribute("data-level", String(level));
+
+            // tooltip
+            cell.addEventListener("mouseenter", () => {
+              const lv = pixels.get(dateStr) ?? 0;
+              tip.style.display = "block";
+              tip.textContent = `${lv} level • ${dateStr}`;
+            });
+            cell.addEventListener("mousemove", (e) => {
+              tip.style.left = e.clientX + 12 + "px";
+              tip.style.top = e.clientY + 12 + "px";
+            });
+            cell.addEventListener("mouseleave", () => {
+              tip.style.display = "none";
+            });
+
+            // ✅ 点击也能画（兼容单点）
+            cell.addEventListener("mousedown", (e) => {
+              // 左键绘制当前颜色；右键擦除
+              if (e.button === 2) {
+                paintLevel = 0;
+              } else {
+                paintLevel = currentLevel;
+              }
+              isPainting = true;
+              lastPaintedDate = null;
+              paintCellFromEventTarget(cell);
+              e.preventDefault();
+            });
+
+            // ✅ 拖拽经过继续画
+            cell.addEventListener("mouseenter", (e) => {
+              if (!isPainting) return;
+              paintCellFromEventTarget(cell);
+            });
+
+            ghGrid.appendChild(cell);
+          }
+        }
+      }
+
+      // ✅ 全局 mouseup：松开就结束绘制
+      window.addEventListener("mouseup", () => {
+        isPainting = false;
+        lastPaintedDate = null;
+      });
+
+      // ✅ 禁止右键菜单（不然右键擦除会弹菜单）
+      panel.addEventListener("contextmenu", (e) => e.preventDefault());
+
+      // --------------------- Year select ---------------------
+      function initYearSelect() {
+        const now = new Date().getFullYear();
+        const years = [];
+        for (let y = now; y >= now - 10; y--) years.push(y);
+        yearSelect.innerHTML = years
+          .map((y) => `<option value="${y}">${y}</option>`)
+          .join("");
+        yearSelect.value = String(now);
+      }
+      yearSelect.addEventListener("change", () => {
+        renderGitHubYear(parseInt(yearSelect.value, 10));
+      });
+
+      // --------------------- Export .sh ---------------------
+      btnSh.addEventListener("click", () => {
+        const year = parseInt(yearSelect.value, 10);
+
+        const entries = [...pixels.entries()]
+          .filter(
+            ([dateStr, level]) =>
+              level && dateStr.startsWith(String(year) + "-"),
+          )
+          .sort((a, b) => (a[0] < b[0] ? -1 : 1));
+
+        const multiplier = 10;
+
+        let script = `#!/bin/bash
+set -e
+
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "❌ 请在 git 仓库目录运行"; exit 1; }
+if [ -n "$(git status --porcelain)" ]; then
+  echo "⚠️ 当前仓库有未提交改动，建议先 commit/stash 再运行"
+fi
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+echo "当前分支: $branch"
+echo "开始喷绘年份: ${year}"
+echo "共 ${entries.length} 个格子有颜色"
+
+`;
+
+        for (const [dateStr, level] of entries) {
+          const dateTime = formatLocalDateTimeFromYMD(dateStr);
+          const commitCount = level * multiplier;
+          script += `echo "绘制 ${dateStr} (level=${level}, commits=${commitCount})"\n`;
+          script += `for i in $(seq 1 ${commitCount}); do
+  GIT_AUTHOR_DATE="${dateTime}" GIT_COMMITTER_DATE="${dateTime}" git commit --allow-empty -m "spray art ${year}" >/dev/null
+done
+
+`;
+        }
+
+        script += `echo "✅ 本地绘制完成"
+echo "推送到远端..."
+git push origin "$branch"
+echo "🚀 已推送完成"
+`;
+
+        downloadText(`spray_${year}.sh`, script, "text/x-shellscript");
+      });
+
+      // --------------------- JSON Backup ---------------------
+      btnExportJson.addEventListener("click", () => {
+        const payload = {
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          data: Object.fromEntries(pixels.entries()),
+        };
+        downloadText(
+          `spray_backup_${yearSelect.value}.json`,
+          JSON.stringify(payload, null, 2),
+          "application/json",
+        );
+      });
+
+      btnImportJson.addEventListener("click", () => fileJson.click());
+
+      fileJson.addEventListener("change", async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+          const text = await file.text();
+          const json = JSON.parse(text);
+          const data =
+            json?.data && typeof json.data === "object" ? json.data : json;
+
+          let count = 0;
+          for (const [k, v] of Object.entries(data)) {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) continue;
+            const lv = Number(v);
+            if (lv >= 1 && lv <= 4) {
+              pixels.set(k, lv);
+              count++;
+            } else {
+              pixels.delete(k);
+            }
+          }
+
+          renderGitHubYear(parseInt(yearSelect.value, 10));
+          alert(`✅ 导入完成：写入 ${count} 个日期`);
+        } catch (err) {
+          console.error(err);
+          alert("❌ 导入失败：JSON 格式不正确");
+        } finally {
+          fileJson.value = "";
+        }
+      });
+
+      // --------------------- Clear ---------------------
+      btnClear.addEventListener("click", () => {
+        if (!confirm("确定清空画布吗？这会清除所有年份的数据。")) return;
+        pixels.clear();
+        renderGitHubYear(parseInt(yearSelect.value, 10));
+      });
+
+      // --------------------- Init ---------------------
+      initYearSelect();
+      renderGitHubYear(parseInt(yearSelect.value, 10));
+    </script>
+  </body>
+</html>
